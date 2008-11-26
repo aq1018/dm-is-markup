@@ -11,7 +11,7 @@ module DataMapper
         include DataMapper::Is::Markup::InstanceMethods
         
         #merge in default options
-        options = {:filter_property => :filter_type }.merge(options)
+        options = {:filter_property => :filter_type, :markup_property => "#{options[:source]}_html" }.merge(options)
         
         # must at least specify a source property to generate the filtered Text
         raise Exception.new("You must specify a :source") unless options.include?(:source)
@@ -22,11 +22,11 @@ module DataMapper
         # make sure the source property exsists
         source_property = properties.detect{|p| p.name == options[:source].to_sym && p.type == DM::Text}
         
-        existing_markup_property = properties.detect{|p| p.name == "#{options[:source]}_html".to_sym}
+        existing_markup_property = properties.detect{|p| p.name == options[:markup_property].to_sym}
         existing_filter_property = properties.detect{|p| p.name == options[:filter_property].to_sym}
         
         unless existing_markup_property || existing_filter_property
-          property "#{options[:source]}_html".to_sym, DM::Text
+          property markup_property, DM::Text
           property filter_property, DM::Enum[:textile, :markdown, :wikitext], :nullable => false, :default => :textile
         else
           raise Exception.new("#{markup_property} or #{filter_property} has been defined as property already!")
@@ -68,7 +68,7 @@ module DataMapper
         end
         
         def apply_filter
-          if new_record? || source_property.dirty? || filter_property.dirty?
+          if new_record? || attribute_dirty?(self.class.source_property) || attribute_dirty?(self.class.filter_property)
             markup_property = generate_markup(self.send(:filter_type))
           end
         end
