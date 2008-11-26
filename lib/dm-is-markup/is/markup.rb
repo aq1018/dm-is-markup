@@ -11,7 +11,10 @@ module DataMapper
         include DataMapper::Is::Markup::InstanceMethods
         
         #merge in default options
-        options = {:filter_property => :filter_type, :markup_property => "#{options[:source]}_html" }.merge(options)
+        options = {
+          :filter_property => :filter_type, 
+          :markup_property => "#{options[:source]}_html".to_sym 
+        }.merge(options)
         
         # must at least specify a source property to generate the filtered Text
         raise Exception.new("You must specify a :source") unless options.include?(:source)
@@ -69,7 +72,7 @@ module DataMapper
         
         def apply_filter
           if new_record? || attribute_dirty?(self.class.source_property) || attribute_dirty?(self.class.filter_property)
-            markup_property = generate_markup(self.send(:filter_type))
+            attribute_set(self.class.markup_property, generate_markup(self.send(:filter_type)))
           end
         end
         
@@ -84,12 +87,6 @@ module DataMapper
           else
             raise Exception.new("Unknown Filter!! use textile, markdown or wikitext as filters only")
           end
-        end
-        
-        protected
-        
-        def markup_property=(str)
-          self.send("#{self.class.markup_property}=", str)
         end
         
       end # InstanceMethods
